@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>China Mall Margin Check</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+</head>
+<body>
+<style>
+:root{
+  --ground:#ECEEEA; --surface:#FFFFFF; --sunk:#E2E5E0;
+  --ink:#151814; --muted:#5E6760; --line:#CFD5CD;
+  --accent:#0F5132; --accent-soft:#DCE8E0; --on-accent:#FFFFFF;
+  --go:#157F3D; --go-bg:#E2F0E6;
+  --stop:#A8201A; --stop-bg:#F6E3E1;
+  --warn:#8A6100; --warn-bg:#F6EBD6;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --cond:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#121512; --surface:#1A1E1A; --sunk:#101310;
+  --ink:#E7EDE7; --muted:#97A398; --line:#2C332C;
+  --accent:#6FCF97; --accent-soft:#1D2A22; --on-accent:#0E140F;
+  --go:#5FC97F; --go-bg:#15291C; --stop:#F08076; --stop-bg:#2E1715;
+  --warn:#E0B055; --warn-bg:#2A2114;}}
+:root[data-theme="dark"]{
+  --ground:#121512; --surface:#1A1E1A; --sunk:#101310;
+  --ink:#E7EDE7; --muted:#97A398; --line:#2C332C;
+  --accent:#6FCF97; --accent-soft:#1D2A22; --on-accent:#0E140F;
+  --go:#5FC97F; --go-bg:#15291C; --stop:#F08076; --stop-bg:#2E1715;
+  --warn:#E0B055; --warn-bg:#2A2114;}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--sans); font-size:16px; line-height:1.45; -webkit-text-size-adjust:100%}
+.wrap{max-width:540px; margin:0 auto; padding-inline:16px; padding-block:14px 40px;
+  display:flex; flex-direction:column; gap:12px}
+h1{font-family:var(--cond); font-weight:700; font-size:1.25rem; margin:0}
+.tag{color:var(--muted); font-size:.8rem; margin:2px 0 0}
+
+/* step rail */
+.rail{display:flex; gap:6px}
+.rail div{flex:1; height:4px; border-radius:2px; background:var(--line)}
+.rail div.done{background:var(--accent)}
+.rail div.now{background:var(--accent); opacity:.55}
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px}
+.step{display:none} .step.on{display:block}
+.stepno{font-family:var(--cond); font-weight:700; font-size:1.05rem; color:var(--accent);
+  letter-spacing:.03em; margin:0 0 2px}
+.steph{font-family:var(--cond); font-weight:700; font-size:1.3rem; margin:0 0 3px}
+.stepd{color:var(--muted); font-size:.85rem; margin:0 0 13px}
+
+label{display:block; font-size:.68rem; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; margin-bottom:5px}
+.fld{border-bottom:2px solid var(--line); padding-bottom:4px; display:flex; align-items:baseline; gap:7px}
+.fld .r{font-family:var(--mono); font-size:1.3rem; color:var(--muted)}
+.fld input{font-family:var(--mono); font-variant-numeric:tabular-nums; background:transparent;
+  border:0; color:var(--ink); width:100%; font-size:2.1rem; font-weight:500; padding:0; min-width:0}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+input,textarea,select,button{font-family:inherit}
+input:focus-visible,button:focus-visible,textarea:focus-visible,select:focus-visible{
+  outline:2px solid var(--accent); outline-offset:2px; border-radius:4px}
+textarea{width:100%; min-height:70px; resize:vertical; font-size:.92rem; background:var(--sunk);
+  color:var(--ink); border:1px dashed var(--line); border-radius:8px; padding:10px; line-height:1.4}
+input.txt{width:100%; font-size:1rem; background:transparent; border:0; border-bottom:1px solid var(--line);
+  color:var(--ink); padding:4px 0}
+select{width:100%; font-size:.92rem; padding:9px 8px; border-radius:7px;
+  background:var(--sunk); color:var(--ink); border:1px solid var(--line)}
+
+button.act,a.act{display:block; width:100%; text-align:center; text-decoration:none;
+  font-weight:600; font-size:.95rem; background:var(--accent); color:var(--on-accent);
+  border:0; border-radius:9px; padding:13px; cursor:pointer; margin-top:12px}
+button.act:disabled{opacity:.45; cursor:not-allowed}
+label.ghost{display:block}
+button.ghost,label.ghost{width:100%; font-weight:600; font-size:.88rem; background:var(--sunk); color:var(--ink);
+  border:1px solid var(--line); border-radius:9px; padding:11px; cursor:pointer; margin-top:9px;
+  text-transform:none; letter-spacing:0; color:var(--ink); font-size:.88rem}
+.back{background:none; border:0; color:var(--muted); font-size:.82rem; cursor:pointer;
+  padding:9px 0 0; text-decoration:underline}
+
+#cam{display:none; margin-top:11px; position:relative; border-radius:9px; overflow:hidden;
+  background:#000; aspect-ratio:4/3}
+#cam.on{display:block}
+#cam video{width:100%; height:100%; object-fit:cover; display:block}
+.reticle{position:absolute; inset:24% 9%; border:2px solid var(--go); border-radius:7px;
+  box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+.camclose{position:absolute; top:8px; right:8px; background:rgba(0,0,0,.6); color:#fff;
+  border:0; border-radius:6px; padding:6px 10px; font-size:.8rem; cursor:pointer; z-index:2}
+
+.note{color:var(--muted); font-size:.78rem; margin:9px 0 0; line-height:1.5}
+.err{color:var(--stop); font-size:.8rem; margin-top:9px; line-height:1.45; display:none}
+.err.on{display:block}
+.box{margin-top:11px; background:var(--accent-soft); border:1px solid var(--accent);
+  border-radius:8px; padding:11px; display:none}
+.box.on{display:block}
+.box .code{font-family:var(--mono); font-size:1.1rem; font-weight:600; color:var(--accent); word-break:break-all}
+.box.warn{background:var(--warn-bg); border-color:var(--warn)}
+.box.warn .code{color:var(--warn)}
+
+.sumrow{display:flex; justify-content:space-between; gap:10px; font-size:.85rem;
+  padding:8px 0; border-bottom:1px solid var(--line)}
+.sumrow:last-child{border-bottom:0}
+.sumrow span:last-child{font-family:var(--mono); font-variant-numeric:tabular-nums}
+
+.flag{display:block; text-align:center; font-family:var(--cond); font-weight:700;
+  font-size:2rem; line-height:1; padding:16px; border-radius:10px; letter-spacing:.03em}
+.flag.go{background:var(--go-bg); color:var(--go)}
+.flag.no{background:var(--stop-bg); color:var(--stop)}
+.flag.thin{background:var(--warn-bg); color:var(--warn)}
+.big{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:2.4rem;
+  font-weight:600; margin:4px 0 0; letter-spacing:-.02em}
+.cap{font-size:.68rem; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600}
+
+details{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:11px 13px}
+summary{cursor:pointer; font-size:.74rem; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); font-weight:600; list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:" +"; font-family:var(--mono)} details[open] summary::after{content:" –"}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:11px}
+.grid2 .fld input{font-size:1rem} .grid2 .fld{border-bottom-width:1px}
+table.ref{width:100%; border-collapse:collapse; font-size:.82rem; margin-top:9px}
+table.ref th{text-align:left; font-size:.66rem; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--muted); padding:5px 0; border-bottom:1px solid var(--line)}
+table.ref td{padding:6px 0; border-bottom:1px solid var(--line)}
+table.ref td+td{text-align:right; font-family:var(--mono); font-variant-numeric:tabular-nums}
+ul.list{list-style:none; margin:9px 0 0; padding:0; display:flex; flex-direction:column; gap:6px}
+ul.list li{display:flex; justify-content:space-between; align-items:center; gap:9px;
+  background:var(--sunk); border-radius:7px; padding:8px 10px; font-size:.83rem}
+ul.list .nm{overflow:hidden}
+ul.list .pr{font-family:var(--mono); white-space:nowrap}
+ul.list button{background:none; border:0; color:var(--muted); cursor:pointer; font-size:1.05rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+<div>
+  <h1>China Mall Margin Check</h1>
+  <p class="tag">Scan it, price it, check it, decide.</p>
+</div>
+<div class="rail"><div id="r1"></div><div id="r2"></div><div id="r3"></div><div id="r4"></div></div>
+
+<!-- STEP 1 -->
+<section class="panel step on" id="s1">
+  <p class="stepno">STEP 1</p>
+  <h2 class="steph">Scan the item</h2>
+  <p class="stepd">Point at the barcode on the product or its box.</p>
+  <button type="button" class="act" id="scanbtn">Open camera</button>
+  <label for="photo" class="ghost" id="photolab" style="display:block;text-align:center">Upload a photo of the barcode</label>
+  <input id="photo" type="file" accept="image/*" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none">
+  <img id="thumb" alt="" style="display:none;margin-top:10px;width:100%;max-height:170px;object-fit:contain;border-radius:8px;background:var(--sunk)">
+  <div id="cam">
+    <button type="button" class="camclose" id="camclose">Close</button>
+    <video id="vid" playsinline muted></video><div class="reticle"></div>
+  </div>
+  <div class="box" id="hit"><div class="cap">Barcode</div><div class="code" id="code"></div></div>
+  <p class="err" id="scanerr"></p>
+  <label for="pname" style="margin-top:14px">Product name <span style="text-transform:none;letter-spacing:0">— helps the Takealot search</span></label>
+  <input class="txt" id="pname" type="text" placeholder="e.g. 20000mAh power bank">
+  <button type="button" class="ghost" id="skip1">No barcode — continue without</button>
+  <button type="button" class="act" id="go1" disabled>Next</button>
+</section>
+
+<!-- STEP 2 -->
+<section class="panel step" id="s2">
+  <p class="stepno">STEP 2</p>
+  <h2 class="steph">What are they asking?</h2>
+  <p class="stepd" id="s2d">The stall price for one unit.</p>
+  <div class="box warn" id="guess">
+    <div class="cap">Possible price in the barcode</div>
+    <div class="code" id="guessval"></div>
+    <p class="note" id="guessnote"></p>
+    <button type="button" class="ghost" id="useguess">Use this price</button>
+  </div>
+  <div style="margin-top:12px">
+    <label for="ask">Stall price</label>
+    <div class="fld"><span class="r">R</span>
+      <input id="ask" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div>
+  </div>
+  <button type="button" class="act" id="go2" disabled>Next</button>
+  <button type="button" class="back" id="b2">Back to scan</button>
+</section>
+
+<!-- STEP 3 -->
+<section class="panel step" id="s3">
+  <p class="stepno">STEP 3</p>
+  <h2 class="steph">Check Takealot</h2>
+  <p class="stepd">Open the listing, copy it, paste it back here.</p>
+  <a class="act" id="lookup" target="_blank" rel="noopener">Search Takealot &rarr;</a>
+  <label for="paste" style="margin-top:14px">Paste the listing</label>
+  <textarea id="paste" placeholder="Paste the product name and price you copied…"></textarea>
+  <p class="note" id="found"></p>
+  <div class="grid2">
+    <div><label for="sell">Takealot price</label>
+      <div class="fld"><span class="r">R</span>
+        <input id="sell" type="number" inputmode="decimal" min="0" step="1" placeholder="0"></div></div>
+    <div><label for="cat">Category</label><select id="cat"></select></div>
+  </div>
+  <button type="button" class="act" id="go3" disabled>See verdict</button>
+  <button type="button" class="back" id="b3">Back to price</button>
+</section>
+
+<!-- STEP 4 -->
+<section class="panel step" id="s4">
+  <p class="stepno">STEP 4</p>
+  <h2 class="steph">Verdict</h2>
+  <div id="flagwrap"></div>
+  <div style="margin-top:14px">
+    <div class="cap">Most you should pay</div>
+    <p class="big" id="maxbuy">R—</p>
+    <p class="note" id="maxsub"></p>
+  </div>
+  <div style="margin-top:14px" id="sum"></div>
+  <button type="button" class="ghost" id="save">Save to shortlist</button>
+  <button type="button" class="act" id="again">Next item</button>
+  <button type="button" class="back" id="b4">Back to Takealot price</button>
+</section>
+
+<details>
+  <summary>Shortlist</summary>
+  <ul class="list" id="list"></ul>
+  <p class="note" id="listempty">Nothing saved yet. Stays on this phone.</p>
+</details>
+
+<details>
+  <summary>Takealot prices — snapshot</summary>
+  <table class="ref">
+    <tr><th>Category</th><th>Live range</th><th>Fee</th></tr>
+    <tr><td>Power banks</td><td>R99 – R599</td><td>6.5%</td></tr>
+    <tr><td>Bluetooth speakers</td><td>R99 – R1199</td><td>7.5%</td></tr>
+    <tr><td>Solar garden lights</td><td>R106 – R594</td><td>11%</td></tr>
+  </table>
+  <p class="note">Pulled 6 October 2026 — a sense of the band, not today's price. The workable part of each
+    range sits around R250–R500.</p>
+</details>
+
+<details>
+  <summary>Cost assumptions</summary>
+  <div class="grid2">
+    <div><label for="fulfil">Fulfilment</label><div class="fld"><span class="r">R</span>
+      <input id="fulfil" type="number" min="0" step="1" value="32"></div></div>
+    <div><label for="pack">Packaging</label><div class="fld"><span class="r">R</span>
+      <input id="pack" type="number" min="0" step="1" value="4"></div></div>
+    <div><label for="units">Units / month</label><div class="fld">
+      <input id="units" type="number" min="1" step="1" value="50"></div></div>
+    <div><label for="trip">Units / trip</label><div class="fld">
+      <input id="trip" type="number" min="1" step="1" value="30"></div></div>
+    <div><label for="fuel">Trip cost</label><div class="fld"><span class="r">R</span>
+      <input id="fuel" type="number" min="0" step="10" value="250"></div></div>
+    <div><label for="margin">Target margin %</label><div class="fld">
+      <input id="margin" type="number" min="0" max="90" step="5" value="30"></div></div>
+  </div>
+  <p class="note">Fulfilment R32 standard 0–1 kg, up to R120 at 15–30 kg; oversize R90–R360.
+    Account fee R400/month. Category fees are midpoints of Takealot's published ranges.</p>
+</details>
+</div>
+
+<script>
+const CATS=[
+ {k:"Phones & accessories",f:6.5,w:["phone","cable","charger","usb","earbud","case","power bank","powerbank","screen protector","adapter","type-c"]},
+ {k:"Electronics",f:7.5,w:["speaker","bluetooth","mouse","keyboard","webcam","hdmi","router","headphone","ssd","flash drive"]},
+ {k:"Office & stationery",f:10,w:["pen","notebook","paper","file","stapler","printer","ink","folder"]},
+ {k:"DIY & tools",f:11,w:["drill","tool","screwdriver","spanner","torch","socket","hammer","led light","solar"]},
+ {k:"Home & kitchen",f:12.5,w:["kitchen","pot","pan","storage","container","blender","kettle","mug","bedding","mop","organiser","organizer","airtight"]},
+ {k:"Toys & games",f:12.5,w:["toy","puzzle","lego","doll","game","figurine"]},
+ {k:"Beauty",f:12.5,w:["brush","mirror","makeup","hair","nail","skincare","trimmer","shaver"]},
+ {k:"Pet supplies",f:12.5,w:["pet","dog","cat","leash","collar","aquarium"]},
+ {k:"Sports & outdoor",f:12.5,w:["gym","yoga","dumbbell","bottle","camping","bicycle","fitness"]},
+ {k:"Fashion",f:14,w:["shirt","dress","shoe","sneaker","jacket","sock","bag","watch","cap","belt"]}
+];
+const $=id=>document.getElementById(id);
+const num=id=>{const v=parseFloat($(id).value); return isNaN(v)?0:v;};
+const R=n=>"R"+Math.round(n).toLocaleString("en-ZA");
+let code="", step=1;
+
+const sel=$("cat");
+CATS.forEach((c,i)=>{const o=document.createElement("option");o.value=i;o.textContent=c.k+" — "+c.f+"%";sel.appendChild(o)});
+sel.value=4;
+
+function show(n){
+  step=n;
+  [1,2,3,4].forEach(i=>$("s"+i).classList.toggle("on",i===n));
+  [1,2,3,4].forEach(i=>{const d=$("r"+i); d.className = i<n?"done":(i===n?"now":"")});
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* ---- step 1: scan ---- */
+const FORMATS=["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf"];
+let stream=null, raf=null, zx=null, running=false;
+function showErr(m){$("scanerr").textContent=m; $("scanerr").classList.add("on");}
+function stopCam(){
+  running=false; if(raf) cancelAnimationFrame(raf), raf=null;
+  if(zx){try{zx.reset()}catch(e){} zx=null;}
+  if(stream){stream.getTracks().forEach(t=>t.stop()); stream=null;}
+  $("cam").classList.remove("on"); $("scanbtn").disabled=false; $("scanbtn").textContent="Open camera";
+}
+/* GS1 restricted-circulation prefixes (02, 20-29) are in-store codes that sometimes
+   carry a price in positions 8-12. Store-specific, so always offered as a guess. */
+function priceFromBarcode(c){
+  if(!/^\d{13}$/.test(c)) return null;
+  const p=c.slice(0,2);
+  if(p!=="02" && !(p[0]==="2")) return null;
+  const cents=parseInt(c.slice(7,12),10);
+  if(isNaN(cents)||cents<=0) return null;
+  const rand=cents/100;
+  if(rand<1||rand>20000) return null;
+  return rand;
+}
+function gotCode(v){
+  if(!v) return;
+  code=v; $("code").textContent=v; $("hit").classList.add("on");
+  $("go1").disabled=false; stopCam();
+  const g=priceFromBarcode(v);
+  if(g){
+    $("guessval").textContent=R(g);
+    $("guessnote").textContent="This barcode is an in-store type that can carry a price. It is a guess — check it against the tag before accepting.";
+    $("guess").classList.add("on");
+  } else $("guess").classList.remove("on");
+}
+function loadZX(){return new Promise((res,rej)=>{
+  if(window.ZXing) return res();
+  const sc=document.createElement("script");
+  sc.src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js";
+  const t=setTimeout(()=>rej(new Error("timeout")),8000);
+  sc.onload=()=>{clearTimeout(t);res()};
+  sc.onerror=()=>{clearTimeout(t);rej(new Error("lib"))};
+  document.head.appendChild(sc);});}
+async function startScan(){
+  $("scanerr").classList.remove("on");
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)
+    return showErr("No camera available to this page. Browsers only allow the camera over a secure (https) connection. Use “No barcode — continue without”.");
+  $("scanbtn").disabled=true; $("scanbtn").textContent="Starting camera…";
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}}});}
+  catch(e){
+    $("scanbtn").disabled=false; $("scanbtn").textContent="Open camera";
+    return showErr(e&&e.name==="NotAllowedError"
+      ? "Camera permission refused. Allow it in your browser settings, or continue without a barcode."
+      : "Couldn't open the camera ("+((e&&e.name)||"unknown")+"). Continue without a barcode.");
+  }
+  const v=$("vid"); v.srcObject=stream; await v.play().catch(()=>{});
+  $("cam").classList.add("on"); $("scanbtn").textContent="Scanning…"; running=true;
+  if("BarcodeDetector" in window){
+    let det; try{det=new window.BarcodeDetector({formats:FORMATS})}catch(e){det=new window.BarcodeDetector()}
+    const tick=async()=>{ if(!running) return;
+      try{const r=await det.detect(v); if(r&&r.length) return gotCode(r[0].rawValue);}catch(e){}
+      raf=requestAnimationFrame(tick);};
+    tick(); return;
+  }
+  try{await loadZX()}catch(e){stopCam(); return showErr("No barcode support here and the decoder wouldn't load. Continue without a barcode.");}
+  try{zx=new window.ZXing.BrowserMultiFormatReader();
+    zx.decodeFromVideoElement(v,(res)=>{if(res&&running) gotCode(res.getText())});}
+  catch(e){stopCam(); showErr("Couldn't start the decoder here.");}
+}
+/* decode a barcode from a chosen photo — needs no camera permission and no https,
+   so this is the route that works from the offline file */
+async function decodePhoto(file){
+  $("scanerr").classList.remove("on");
+  $("photolab").textContent="Reading photo\u2026";
+  const dataURL = await new Promise((res,rej)=>{
+    const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(file);
+  });
+  const t=$("thumb"); t.src=dataURL; t.style.display="block";
+
+  if("BarcodeDetector" in window){
+    try{
+      let det; try{det=new window.BarcodeDetector({formats:FORMATS})}catch(e){det=new window.BarcodeDetector()}
+      const bmp=await createImageBitmap(file);
+      const r=await det.detect(bmp);
+      if(r&&r.length){ $("photolab").textContent="Upload a different photo"; return gotCode(r[0].rawValue); }
+    }catch(e){}
+  }
+  try{
+    await loadZX();
+    const reader=new window.ZXing.BrowserMultiFormatReader();
+    const res=await reader.decodeFromImageUrl(dataURL);
+    $("photolab").textContent="Upload a different photo";
+    return gotCode(res.getText());
+  }catch(e){
+    $("photolab").textContent="Upload a photo of the barcode";
+    showErr("No barcode found in that photo. Get closer, keep it straight and well lit \u2014 or continue without a barcode and type the product name.");
+  }
+}
+$("photo").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0]; if(f) decodePhoto(f);});
+$("scanbtn").onclick=startScan;
+$("camclose").onclick=stopCam;
+$("pname").addEventListener("input",()=>{ $("go1").disabled = !code && !$("pname").value.trim(); });
+$("skip1").onclick=()=>{stopCam(); $("go1").disabled = !$("pname").value.trim(); if(!$("go1").disabled) goStep2(); else $("pname").focus();};
+
+function goStep2(){
+  const n=$("pname").value.trim();
+  $("s2d").textContent = n ? ("Stall price for: "+n) : "The stall price for one unit.";
+  show(2); checkAsk();
+}
+$("go1").onclick=()=>{stopCam(); goStep2();};
+
+/* ---- step 2: stall price ---- */
+function checkAsk(){ $("go2").disabled = num("ask")<=0; }
+$("ask").addEventListener("input",checkAsk);
+$("useguess").onclick=()=>{ $("ask").value=parseFloat($("guessval").textContent.replace(/[^\d.]/g,"")); checkAsk(); $("guess").classList.remove("on"); };
+$("b2").onclick=()=>show(1);
+$("go2").onclick=()=>{
+  const q = $("pname").value.trim() || code;
+  $("lookup").href="https://www.takealot.com/all?qsearch="+encodeURIComponent(q);
+  $("lookup").textContent = q ? ("Search Takealot for “"+(q.length>24?q.slice(0,24)+"…":q)+"” →") : "Search Takealot →";
+  const guess=guessCat($("pname").value); if(guess>=0) sel.value=guess;
+  show(3); checkSell();
+};
+
+/* ---- step 3: takealot ---- */
+function parsePrices(t){
+  const out=[], re=/R\s*([0-9][0-9  ,.]*)/gi; let m;
+  while((m=re.exec(t))!==null){
+    let s=m[1].replace(/[  ]/g,"");
+    s = (/,\d{2}$/.test(s)&&!s.includes(".")) ? s.replace(/,/g,".") : s.replace(/,/g,"");
+    const v=parseFloat(s);
+    if(!isNaN(v)&&v>0&&v<1000000&&out.indexOf(v)===-1) out.push(v);
+  }
+  return out;
+}
+function guessCat(t){
+  const s=(t||"").toLowerCase(); let best=-1,h=0;
+  CATS.forEach((c,i)=>{const n=c.w.filter(w=>s.includes(w)).length; if(n>h){h=n;best=i}});
+  return best;
+}
+function onPaste(){
+  const t=$("paste").value, pr=parsePrices(t);
+  if(pr.length){ $("sell").value=Math.min.apply(null,pr); }
+  const g=guessCat(t); if(g>=0) sel.value=g;
+  $("found").textContent = pr.length
+    ? ("Read "+R(Math.min.apply(null,pr))+(pr.length>1?" (lowest of "+pr.length+" prices found)":"")+".")
+    : "No price found — type it in below.";
+  checkSell();
+}
+function checkSell(){ $("go3").disabled = num("sell")<=0; }
+$("paste").addEventListener("input",onPaste);
+$("sell").addEventListener("input",checkSell);
+$("b3").onclick=()=>show(2);
+$("go3").onclick=()=>{calc(); show(4);};
+
+/* ---- step 4: verdict ---- */
+function fixed(){
+  const u=Math.max(1,num("units")), t=Math.max(1,num("trip"));
+  return {fulfil:num("fulfil"),pack:num("pack"),acct:400/u,inb:num("fuel")/t};
+}
+function calc(){
+  const P=num("sell"), ask=num("ask"), fee=CATS[sel.value].f/100, m=num("margin")/100, F=fixed();
+  const fx=F.fulfil+F.pack+F.acct+F.inb, feeR=P*fee;
+  const maxBuy=P-feeR-fx-P*m, net=P-feeR-fx-ask, pct=P>0?net/P*100:0;
+  let cls,txt;
+  if(net<=0){cls="no";txt="WALK AWAY";}
+  else if(pct<m*100){cls="thin";txt="THIN · "+pct.toFixed(0)+"%";}
+  else{cls="go";txt="BUY · "+pct.toFixed(0)+"%";}
+  $("flagwrap").innerHTML='<span class="flag '+cls+'">'+txt+'</span>';
+  if(maxBuy<=0){
+    $("maxbuy").textContent="Not viable";
+    $("maxsub").textContent="At "+CATS[sel.value].f+"% you'd need to list above "+R(fx/(1-fee-m))+" for a "+Math.round(m*100)+"% margin at any cost.";
+  }else{
+    $("maxbuy").textContent=R(maxBuy);
+    $("maxsub").textContent = ask>maxBuy
+      ? ("They want "+R(ask)+" — that's "+R(ask-maxBuy)+" too much. Haggle to "+R(maxBuy)+" or walk.")
+      : ("They want "+R(ask)+" — "+R(maxBuy-ask)+" of room to spare.");
+  }
+  const rows=[["Takealot price",R(P)],["Cost of goods","−"+R(ask)],
+    ["Success fee ("+CATS[sel.value].f+"%)","−"+R(feeR)],["Fulfilment","−"+R(F.fulfil)],
+    ["Packaging","−"+R(F.pack)],["Account fee / unit","−"+R(F.acct)],
+    ["Trip to DC / unit","−"+R(F.inb)],["Profit per unit",(net<0?"−":"")+R(Math.abs(net))]];
+  $("sum").innerHTML=rows.map(r=>'<div class="sumrow"><span>'+r[0]+'</span><span>'+r[1]+'</span></div>').join("");
+}
+$("b4").onclick=()=>show(3);
+$("again").onclick=()=>{
+  code=""; $("code").textContent=""; $("hit").classList.remove("on");
+  $("guess").classList.remove("on"); $("scanerr").classList.remove("on");
+  $("pname").value=""; $("ask").value=""; $("paste").value=""; $("sell").value="";
+  $("photo").value=""; $("thumb").style.display="none"; $("thumb").removeAttribute("src");
+  $("photolab").textContent="Upload a photo of the barcode";
+  $("found").textContent=""; $("go1").disabled=true; $("go2").disabled=true; $("go3").disabled=true;
+  show(1);
+};
+
+/* shortlist */
+let saved=[];
+try{saved=JSON.parse(localStorage.getItem("cmmc")||"[]")}catch(e){saved=[]}
+function draw(){
+  $("list").innerHTML=saved.map((s,i)=>'<li><span class="nm">'+String(s.n).replace(/[<>&]/g,"")+
+    '<br><span style="font-family:var(--mono);font-size:.7rem;opacity:.7">'+(s.b||"no barcode")+'</span></span>'+
+    '<span class="pr">'+R(s.p)+' / max '+R(s.m)+'</span>'+
+    '<button type="button" data-i="'+i+'" aria-label="Remove">×</button></li>').join("");
+  $("listempty").hidden=saved.length>0;
+  try{localStorage.setItem("cmmc",JSON.stringify(saved))}catch(e){}
+}
+$("list").onclick=e=>{const i=e.target.dataset.i; if(i!==undefined){saved.splice(+i,1);draw()}};
+$("save").onclick=()=>{
+  const P=num("sell"), fee=CATS[sel.value].f/100, m=num("margin")/100, F=fixed();
+  const mx=P-P*fee-(F.fulfil+F.pack+F.acct+F.inb)-P*m;
+  saved.unshift({n:$("pname").value.trim()||("Item at "+R(P)),p:num("ask"),m:Math.max(0,mx),b:code});
+  draw(); $("save").textContent="Saved ✓"; setTimeout(()=>$("save").textContent="Save to shortlist",1400);
+};
+["fulfil","pack","units","trip","fuel","margin"].forEach(id=>$(id).addEventListener("input",()=>{if(step===4)calc()}));
+sel.addEventListener("change",()=>{if(step===4)calc()});
+show(1); draw();
+</script>
+
+</body>
+</html>
